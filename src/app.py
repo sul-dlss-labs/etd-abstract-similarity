@@ -46,6 +46,7 @@ For more information, refer to this [K-means clustering](https://365datascience.
 article.
 """ 
 
+@st.cache(allow_output_mutation=True)
 def get_cluster(dataframe, embeddings, n_clusters=30):
     clustering_model = KMeans(n_clusters=n_clusters)
     clustering_model.fit(embeddings)
@@ -92,7 +93,6 @@ def cluster_sizes_graph():
     plt.ylabel('WCSS')
     plt.title('K-means Clustering')
     st.pyplot(plt)
-
 
 
 def cluster_results(clustered_abstracts):
