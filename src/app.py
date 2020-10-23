@@ -65,11 +65,11 @@ def header_loading(biology_only):
     loading_text = st.text("Loading Abstracts and Encoding with BERT...")
     if biology_only:
         abstracts_df = pd.read_pickle("../data/biology.pkl")
-        with open("../data/biology-bert-embedding.pkl", "rb") as fo:
+        with open("data/biology-bert-embedding.pkl", "rb") as fo:
             abstracts_embeddings = pickle.load(fo)
     else:
-        abstracts_df = pd.read_pickle("../data/abstracts.pkl")
-        with open("../data/abstracts-bert-embeddings.pkl", "rb") as fo:
+        abstracts_df = pd.read_pickle("data/abstracts.pkl")
+        with open("data/abstracts-bert-embeddings.pkl", "rb") as fo:
             abstracts_embeddings = pickle.load(fo)
     loading_text.text("Finished loading")
     return abstracts_df, abstracts_embeddings
