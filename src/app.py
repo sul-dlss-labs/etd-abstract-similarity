@@ -84,7 +84,7 @@ def about_kmeans():
     cluster_sizes_graph()
 
 def cluster_sizes_graph():
-    with open("../data/wcss.pkl", "rb") as fo:
+    with open("data/wcss.pkl", "rb") as fo:
         wcss = pickle.load(fo)
     plt.figure(figsize=(10,8))
     plt.plot(range(1,50), wcss, marker = 'o', linestyle='--')
