@@ -6,7 +6,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 import streamlit.components.v1 as components
-import helpers
 import detail
 
 from sklearn.cluster import KMeans
