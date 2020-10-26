@@ -1,55 +1,21 @@
 __license__ = "Apache 2"
 import argparse
+import pathlib
 import pickle
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
-
+import streamlit.components.v1 as components
+import helpers
+import detail
 
 from sklearn.cluster import KMeans
 
 parser = argparse.ArgumentParser(description="AI-ETD Cataloging Utility")
 parser.add_argument("--biology", default=False)
-
-abstracts_df_desc = """## Abstracts DataFrame
-For all of the world-accessible theses and dissertations, we queried Stanford's
-Digital Repository with value in *druids* column and retrieved the abstract
-contained in the MODS XML data-stream.  Each abstract was then processed to
-remove stop words and punctuation marks, converted to lower case, and stored
-in the *abstracts_cleaned* column. Finally, the department name was retrieved
-from the  MODS and added as the *department* column.
-"""
-
-BERT_sentence_desc = """## BERT Sentence Embeddings
-Starting with the *abstracts_cleaned* column, we use a pre-trained BERT model
-for creating abstract embedding with the Huggingface
-[Sentence Transformers](https://github.com/UKPLab/sentence-transformers)
-library.
-
-```python
-from sentence_transformers import SentenceTransformer
-sbert_model = SentenceTransformer('bert-base-nli-mean-tokens')
-abstracts_embeddings = sbert_model.encode(abstracts_df['abstracts_cleaned'])
-```
-"""
-
-kmeans_desc = """## K-Means Clusters
-Using the `abstracts_embeddings` matrix, the K-Means clustering approach takes
-a number of clusters and
-centers each cluster by calculating the Euclidean distance between the center
-in each cluster with its observations.
-
-One method to determine the number of clusters is to calculate the
-**Within Cluster Sum of Squares (wcss)** for a range of cluster sizes. The
-*wcss* is the sum of variance between the observations in each cluster.
-Graphing the *wcss* over the number of clusters, we can pick a number that
-balances the steepness of the curve verses the smoothing tail.
-
-For more information, refer to
-[K-means clustering](https://365datascience.com/k-means-clustering/)  article.
-"""
-
+abstract_md = pathlib.Path("doc/abstracts-df.md")
+bert_sentence_md = pathlib.Path("doc/bert-sentence-desc.md")
+kmeans_md = pathlib.Path("doc/kmeans-desc.md")
 
 @st.cache(allow_output_mutation=True)
 def get_cluster(dataframe, embeddings, n_clusters=30):
@@ -69,7 +35,6 @@ def header_loading(biology_only):
     if biology_only:
         title = f"{title} for Biology"
     st.title(title)
-    loading_text = st.text("Loading Abstracts and Encoding with BERT...")
     if biology_only:
         abstracts_df = pd.read_pickle("../data/biology.pkl")
         with open("data/biology-bert-embedding.pkl", "rb") as fo:
@@ -78,18 +43,17 @@ def header_loading(biology_only):
         abstracts_df = pd.read_pickle("data/abstracts.pkl")
         with open("data/abstracts-bert-embeddings.pkl", "rb") as fo:
             abstracts_embeddings = pickle.load(fo)
-    loading_text.text("Finished loading")
     return abstracts_df, abstracts_embeddings
 
 
 def about_dataframe_bert(dataframe: pd.DataFrame):
-    st.markdown(abstracts_df_desc)
+    st.markdown(abstract_md.read_text())
     st.write(dataframe.head())
-    st.markdown(BERT_sentence_desc)
+    st.markdown(bert_sentence_md.read_text())
 
 
 def about_kmeans():
-    st.markdown(kmeans_desc)
+    st.markdown(kmeans_md.read_text())
     cluster_sizes_graph()
 
 
@@ -104,8 +68,8 @@ def cluster_sizes_graph():
     st.pyplot(plt)
 
 
-def cluster_results(clustered_abstracts):
-    col1, col2 = st.beta_columns(2)
+def cluster_results(main_content, cluster_size: int, clustered_abstracts: list):
+    col1, col2 = main_content.beta_columns(2)
     for i, cluster in enumerate(clustered_abstracts):
         header = f"Cluster {i+1} size: {len(cluster)}"
         groups = {}
@@ -120,12 +84,19 @@ def cluster_results(clustered_abstracts):
                 ]
         if not i % 2:
             col1.subheader(header)
+            if col1.button("Details", key=f"{cluster_size} {i}"):
+                main_content.empty()
+                detail.main(i, groups)
+ 
             for dept, druids in reversed(
                 sorted(groups.items(), key=lambda item: len(item[1]))
             ):
                 col1.write(f"{dept} {len(druids)}")
         else:
             col2.subheader(header)
+            if col2.button("Details", key=f"{cluster_size} {i}"):
+                main_content.empty()
+                detail.main(i, groups)
             for dept, druids in reversed(
                 sorted(groups.items(), key=lambda item: len(item[1]))
             ):
@@ -147,15 +118,12 @@ def main(biology_only):
         clustered_abstracts = get_cluster(abstracts_df,
                                           abstracts_embeddings,
                                           option)
-        cluster_results(clustered_abstracts)
+        main_content = st.empty()
+        cluster_results(main_content, option, clustered_abstracts)
 
 
 if __name__ == "__main__":
-    print(
-        """
-To run with just the biology abstract:
-streamlit run abstract_similarity.py -- --biology True
-"""
-    )
+#    To run with just the biology abstract:
+#    streamlit run abstract_similarity.py -- --biology True
     args = parser.parse_args()
     main(args.biology)
