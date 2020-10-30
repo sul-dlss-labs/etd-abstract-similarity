@@ -2,6 +2,8 @@ __license__ = "Apache 2"
 import argparse
 import pathlib
 import pickle
+
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
@@ -24,17 +26,15 @@ def _get_state(hash_funcs=None):
 
 
 @st.cache(allow_output_mutation=True)
-def get_cluster(dataframe, embeddings, n_clusters=30):
+def get_cluster(dataframe: pd.DataFrame,
+                embeddings: np.ndarray,
+                n_clusters=30) -> np.ndarray:
     clustering_model = KMeans(n_clusters=n_clusters)
-    clustering_model.fit(embeddings)
-    clustering_abstracts = [[] for i in range(n_clusters)]
-    for abstract_id, cluster_id in enumerate(clustering_model.labels_):
-        series = dataframe.iloc[abstract_id]
-        clustering_abstracts[cluster_id].append(
-            {"druid": series["druids"], "department": series["departments"]}
-        )
-    return clustering_abstracts
-
+    predicted_cluster = clustering_model.fit_predict(embeddings)
+    clustered_abstracts = dataframe.copy()
+    clustered_abstracts['cluster'] = clustered_abstracts.index.map(lambda x: predicted_cluster[x])
+    groups = [group for group in clustered_abstracts.groupby(by='cluster')]
+    return groups
 
 def header_loading() -> tuple:
     state = _get_state()
@@ -67,39 +67,39 @@ def cluster_sizes_graph():
     st.pyplot(plt)
 
 
-def cluster_results(main_content, cluster_size: int, clustered_abstracts: list):
+def cluster_results(main_content,
+                    cluster_size: int,
+                    clustered_abstracts: list) -> None:
     col1, col2 = main_content.beta_columns(2)
-    for i, cluster in enumerate(clustered_abstracts):
-        header = f"Cluster {i+1} size: {len(cluster)}"
-        groups = {}
-        for abstract in cluster:
-            dept = abstract["department"].replace(".", "")
-            druid = abstract["druid"]
-            if dept in groups:
-                groups[dept].append(druid)
-            else:
-                groups[dept] = [
-                    druid,
-                ]
-        if not i % 2:
+    for row in clustered_abstracts:
+        number = row[0]
+        header = f"Cluster {number+1} size: {len(row[1])}"
+        groups = [group for group in row[1].groupby(by='departments')]
+        if not row[0] % 2:
             col1.subheader(header)
-            if col1.button("Details", key=f"{cluster_size} {i}"):
-                main_content.empty()
-                detail.main(i, groups)
- 
-            for dept, druids in reversed(
-                sorted(groups.items(), key=lambda item: len(item[1]))
-            ):
-                col1.write(f"{dept} {len(druids)}")
+            if col1.button("Details", key=f"{cluster_size} {number}"):
+                # main_content.empty()
+                detail.main(main_content, number, groups)
+            for group in groups:
+                col1.markdown(f"{group[0]} ({len(group[1]['druids'])})")
+                col1.dataframe(group[1])
+            # for dept, druids in reversed(
+            #     sorted(groups.items(), key=lambda item: len(item[1]))
+            # ):
+            #     col1.write(f"{dept} {len(druids)}")
         else:
             col2.subheader(header)
-            if col2.button("Details", key=f"{cluster_size} {i}"):
+            if col2.button("Details", key=f"{cluster_size} {number}"):
                 main_content.empty()
-                detail.main(i, groups)
-            for dept, druids in reversed(
-                sorted(groups.items(), key=lambda item: len(item[1]))
-            ):
-                col2.write(f"{dept} {len(druids)}")
+                detail.main(main_content, number, groups)
+            for group in groups:
+                col2.markdown(f"{group[0]} ({len(group[1]['druids'])})")
+                col2.dataframe(group[1])
+                # col2.bar_chart(group[0],len(group[1]['druids']))
+        #     for dept, druids in reversed(
+        #         sorted(groups.items(), key=lambda item: len(item[1]))
+        #     ):
+        #         col2.write(f"{dept} {len(druids)}")
 
 
 def main():
@@ -122,5 +122,5 @@ def main():
 
 
 if __name__ == "__main__":
-#    streamlit run abstract_similarity.py 
+#    streamlit run abstract_similarity.py
     main()

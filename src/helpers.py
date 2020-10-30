@@ -18,7 +18,7 @@ FAST_GEO_DF = pd.read_json("data/fast-geo.json")
 FAST_TOPICS_DF = pd.read_json("data/fast-topics.json")
 
 FAST_VOCAB = pd.concat([FAST_GEO_DF, FAST_TOPICS_DF])
- 
+
 class _SessionState:
     def __init__(self, session, hash_funcs):
         """Initialize SessionState instance."""
@@ -39,7 +39,7 @@ class _SessionState:
     def __getitem__(self, item):
         """Return a saved state value, None if item is undefined."""
         return self._state["data"].get(item, None)
-        
+
     def __getattr__(self, item):
         """Return a saved state value, None if item is undefined."""
         return self._state["data"].get(item, None)
@@ -51,12 +51,12 @@ class _SessionState:
     def __setattr__(self, item, value):
         """Set state value."""
         self._state["data"][item] = value
-    
+
     def clear(self):
         """Clear session state and request a rerun."""
         self._state["data"].clear()
         self._state["session"].request_rerun()
-    
+
     def sync(self):
         """Rerun the app with all state values up to date from the beginning to fix rollbacks."""
 
@@ -66,28 +66,28 @@ class _SessionState:
         # Example: state.value += 1
         if self._state["is_rerun"]:
             self._state["is_rerun"] = False
-        
+
         elif self._state["hash"] is not None:
             if self._state["hash"] != self._state["hasher"].to_bytes(self._state["data"], None):
                 self._state["is_rerun"] = True
                 self._state["session"].request_rerun()
 
         self._state["hash"] = self._state["hasher"].to_bytes(self._state["data"], None)
-        
-        
+
+
 def _get_session():
     session_id = get_report_ctx().session_id
     session_info = Server.get_current()._get_session_info(session_id)
 
     if session_info is None:
         raise RuntimeError("Couldn't get your Streamlit Session object.")
-    
+
     return session_info.session
 
 def save_fast_to_druid(druid: str, fast_uris: list):
     if len(fast_uris) < 1:
         return
-    
+
 special_char_re = re.compile(r'[^a-zA-Z]')
 
 def cleanup(term: str) -> str:
@@ -108,15 +108,18 @@ def generate_labels(df: pd.DataFrame) -> dict:
         labels[uri] = [label,]
     return labels
 
-# Setup FAST Topic, Geographical, and Chronological Spacy Vocabularies
-def setup_spacy():
-    nlp = spacy.load("en_core_web_sm")
-    # Loads Topics and Geographic to Spacy Vocabularies
-    fast_labels = generate_labels(FAST_VOCAB)
-    fast_entity = Entity(keywords_dict=fast_labels, label="FAST")
-    nlp.add_pipe(fast_entity)
-    nlp.remove_pipe("ner")
-    return nlp, fast_entity
-        
-    
+def load_fast(fast_df: pd.DataFrame, label: str) -> tuple:
+    fast = spacy.load("en_core_web_sm")
+    fast_labels = generate_labels(fast_df)
+    fast_entity = Entity(keywords_dict=fast_labels, label=label)
+    fast.add_pipe(fast_entity)
+    fast.remove_pipe("ner")
+    return fast, fast_entity
 
+
+# Setup FAST Topic, Geographical, and Chronological Spacy Vocabularies
+def setup_spacy() -> tuple:
+    # Loads Topics and Geographic to Spacy Vocabularies
+    geo_nlp, geo_entity = load_fast(FAST_GEO_DF)
+    topic_nlp, topic_entity = load_fast(FAST_TOPICS_DF)
+    return geo_nlp, geo_entity, topic_nlp, topic_entity
