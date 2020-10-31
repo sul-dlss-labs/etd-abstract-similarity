@@ -1,7 +1,5 @@
 __license__ = "Apache 2"
 
-import datetime
-import json
 import re
 
 import pandas as pd
@@ -13,11 +11,13 @@ from streamlit.report_thread import get_report_ctx
 from streamlit.hashing import _CodeHasher
 from streamlit.server.server import Server
 
-STOP_WORDS_LIST = stopwords.words('english')
+
 FAST_GEO_DF = pd.read_json("data/fast-geo.json")
 FAST_TOPICS_DF = pd.read_json("data/fast-topics.json")
-
 FAST_VOCAB = pd.concat([FAST_GEO_DF, FAST_TOPICS_DF])
+SPECIAL_CHAR_RE = re.compile(r'[^a-zA-Z]')
+STOP_WORDS_LIST = stopwords.words('english')
+
 
 class _SessionState:
     def __init__(self, session, hash_funcs):
@@ -58,7 +58,8 @@ class _SessionState:
         self._state["session"].request_rerun()
 
     def sync(self):
-        """Rerun the app with all state values up to date from the beginning to fix rollbacks."""
+        """Rerun the app with all state values up to date from the beginning to
+        fix rollbacks."""
 
         # Ensure to rerun only once to avoid infinite loops
         # caused by a constantly changing state value at each run.
@@ -68,11 +69,13 @@ class _SessionState:
             self._state["is_rerun"] = False
 
         elif self._state["hash"] is not None:
-            if self._state["hash"] != self._state["hasher"].to_bytes(self._state["data"], None):
+            if self._state["hash"] != self._state["hasher"].to_bytes(
+                    self._state["data"], None):
                 self._state["is_rerun"] = True
                 self._state["session"].request_rerun()
 
-        self._state["hash"] = self._state["hasher"].to_bytes(self._state["data"], None)
+        self._state["hash"] = self._state["hasher"].to_bytes(
+            self._state["data"], None)
 
 
 def _get_session():
@@ -84,17 +87,17 @@ def _get_session():
 
     return session_info.session
 
+
 def save_fast_to_druid(druid: str, fast_uris: list):
     if len(fast_uris) < 1:
         return
 
-special_char_re = re.compile(r'[^a-zA-Z]')
 
 def cleanup(term: str) -> str:
     cleaned = []
     for char in term.split():
-        cleaned_char = special_char_re.sub(' ', char).lower()
-        if cleaned_char in stop_words_list:
+        cleaned_char = SPECIAL_CHAR_RE.sub(' ', char).lower()
+        if cleaned_char in STOP_WORDS_LIST:
             continue
         cleaned.append(cleaned_char)
     return ' '.join(cleaned)
@@ -105,8 +108,9 @@ def generate_labels(df: pd.DataFrame) -> dict:
     for row in df.iterrows():
         uri = row[1]["URI"]
         label = row[1]["cleaned"]
-        labels[uri] = [label,]
+        labels[uri] = [label, ]
     return labels
+
 
 def load_fast(fast_df: pd.DataFrame, label: str) -> tuple:
     fast = spacy.load("en_core_web_sm")
