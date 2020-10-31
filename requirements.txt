@@ -2,5 +2,6 @@ streamlit >= 0.69.2
 pandas >= 1.0.3
 matplotlib >= 3.2.1
 spacy >= 2.2.4
+spacy_lookup >= 0.1.0
 sklearn
-ntlk
+nltk >= 3.5
