@@ -2,6 +2,7 @@ __license__ = "Apache 2"
 import pathlib
 import pickle
 
+import nltk
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -123,4 +124,5 @@ def main():
 
 if __name__ == "__main__":
     # streamlit run abstract_similarity.py
+    nltk.download('stopwords')
     main()
