@@ -1,11 +1,12 @@
 __license__ = "Apache 2"
 import re
 
+import nltk
 import requests
-
 import lxml.etree as etree
 
 from nltk.corpus import stopwords
+nltk.download('stopwords')
 
 NS = {"mods": "http://www.loc.gov/mods/v3"}
 SPECIAL_CHAR_RE = re.compile(r'[^a-zA-Z]')
