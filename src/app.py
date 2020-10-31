@@ -1,5 +1,4 @@
 __license__ = "Apache 2"
-import argparse
 import pathlib
 import pickle
 
@@ -7,7 +6,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
-import streamlit.components.v1 as components
 import detail
 import helpers
 
@@ -17,12 +15,13 @@ abstract_md = pathlib.Path("doc/abstracts-df.md")
 bert_sentence_md = pathlib.Path("doc/bert-sentence-desc.md")
 kmeans_md = pathlib.Path("doc/kmeans-desc.md")
 
+
 def _get_state(hash_funcs=None):
     session = helpers._get_session()
     if not hasattr(session, "_custom_session_state"):
-        session._custom_session_state = helpers._SessionState(session, hash_funcs)
+        session._custom_session_state = helpers._SessionState(session,
+                                                              hash_funcs)
     return session._custom_session_state
-
 
 
 @st.cache(allow_output_mutation=True)
@@ -32,12 +31,13 @@ def get_cluster(dataframe: pd.DataFrame,
     clustering_model = KMeans(n_clusters=n_clusters)
     predicted_cluster = clustering_model.fit_predict(embeddings)
     clustered_abstracts = dataframe.copy()
-    clustered_abstracts['cluster'] = clustered_abstracts.index.map(lambda x: predicted_cluster[x])
+    clustered_abstracts['cluster'] = clustered_abstracts.index.map(
+        lambda x: predicted_cluster[x])
     groups = [group for group in clustered_abstracts.groupby(by='cluster')]
     return groups
 
+
 def header_loading() -> tuple:
-    state = _get_state()
     st.title("Stanford ETD Abstract Similarity")
     abstracts_df = pd.read_pickle("data/abstracts.pkl")
     with open("data/abstracts-bert-embeddings.pkl", "rb") as fo:
@@ -122,5 +122,5 @@ def main():
 
 
 if __name__ == "__main__":
-#    streamlit run abstract_similarity.py
+    # streamlit run abstract_similarity.py
     main()
