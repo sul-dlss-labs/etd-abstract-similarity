@@ -1,22 +1,71 @@
 __license__ = "Apache 2"
 
+import pathlib
+import pickle
 import re
 
+
+import numpy as np
 import pandas as pd
+
 import spacy
 
+import streamlit as st
+import matplotlib.pyplot as plt
 from nltk.corpus import stopwords
+from sklearn.cluster import KMeans
 from spacy_lookup import Entity
 from streamlit.report_thread import get_report_ctx
 from streamlit.hashing import _CodeHasher
 from streamlit.server.server import Server
 
 
+ABSTRACT_MD = pathlib.Path("doc/abstracts-df.md")
+BERT_SENTENCE_MD = pathlib.Path("doc/bert-sentence-desc.md")
 FAST_GEO_DF = pd.read_json("data/fast-geo.json")
 FAST_TOPICS_DF = pd.read_json("data/fast-topics.json")
 FAST_VOCAB = pd.concat([FAST_GEO_DF, FAST_TOPICS_DF])
+KMEANS_MD = pathlib.Path("doc/kmeans-desc.md")
 SPECIAL_CHAR_RE = re.compile(r'[^a-zA-Z]')
 STOP_WORDS_LIST = stopwords.words('english')
+
+
+
+@st.cache(allow_output_mutation=True)
+def get_cluster(dataframe: pd.DataFrame,
+                embeddings: np.ndarray,
+                n_clusters=30) -> np.ndarray:
+    clustering_model = KMeans(n_clusters=n_clusters)
+    predicted_cluster = clustering_model.fit_predict(embeddings)
+    clustered_abstracts = dataframe.copy()
+    clustered_abstracts['cluster'] = clustered_abstracts.index.map(
+        lambda x: predicted_cluster[x])
+    groups = [group for group in clustered_abstracts.groupby(by='cluster')]
+    return groups
+
+
+
+
+
+def about_dataframe_bert(dataframe: pd.DataFrame):
+    st.markdown(ABSTRACT_MD.read_text())
+    st.write(dataframe.head())
+    st.markdown(BERT_SENTENCE_MD.read_text())
+
+def cluster_sizes_graph():
+    with open("data/wcss.pkl", "rb") as fo:
+        wcss = pickle.load(fo)
+    plt.figure(figsize=(10, 8))
+    plt.plot(range(1, 50), wcss, marker="o", linestyle="--")
+    plt.xlabel("Number of clusters")
+    plt.ylabel("WCSS")
+    plt.title("K-means Clustering")
+    st.pyplot(plt)
+
+def about_kmeans():
+    st.markdown(KMEANS_MD.read_text())
+    cluster_sizes_graph()
+
 
 
 class _SessionState:
@@ -124,6 +173,6 @@ def load_fast(fast_df: pd.DataFrame, label: str) -> tuple:
 # Setup FAST Topic, Geographical, and Chronological Spacy Vocabularies
 def setup_spacy() -> tuple:
     # Loads Topics and Geographic to Spacy Vocabularies
-    geo_nlp, geo_entity = load_fast(FAST_GEO_DF)
-    topic_nlp, topic_entity = load_fast(FAST_TOPICS_DF)
+    geo_nlp, geo_entity = load_fast(FAST_GEO_DF, 'FAST Geo')
+    topic_nlp, topic_entity = load_fast(FAST_TOPICS_DF, 'FAST Topic')
     return geo_nlp, geo_entity, topic_nlp, topic_entity

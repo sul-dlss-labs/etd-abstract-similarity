@@ -8,20 +8,20 @@ import spacy
 from spacy import displacy
 
 setup_spacy = st.cache(helpers.setup_spacy, allow_output_mutation=True)
+abstracts_df = pd.read_pickle("data/abstracts.pkl")
 
-
-def main(content, cluster_number, groups) -> None:
-    content.empty()
-    nlp, fast_vocab = setup_spacy()
-    content.subheader(f"Details for Cluster {cluster_number+1}")
-    # fast_suggestions = st.empty()
-    # fast_subjects = dict()
-    # for dept, druids in reversed(
-    #             sorted(groups.items(), key=lambda item: len(item[1]))
-    #         ):
-    #     st.markdown(f"### {dept} Total {len(druids)}")
-    #     for druid in druids:
-    #         abstract = abstracts_df.loc[abstracts_df['druids'] == druid]
+def main(cluster_number, groups) -> None:
+    
+    geo_nlp, geo_entity, topic_nlp, topic_entity = setup_spacy()
+    st.subheader(f"Details for Cluster {cluster_number+1}")
+    fast_suggestions = st.empty()
+    fast_subjects = dict()
+    for dept, druids in reversed(
+                 sorted(groups, key=lambda item: len(item[1]))
+            ):
+         st.markdown(f"### {dept} Total {len(druids)}")
+         for druid in druids:
+             abstract = abstracts_df.loc[abstracts_df['druids'] == druid]
     #         st.markdown(f"#### {druid} [{abstract['title'].item()}](https://purl.stanford.edu/{druid})")
     #         st.markdown("#### FAST Suggestions")
     #         doc = nlp(abstract['abstracts_cleaned'].item())
@@ -35,6 +35,6 @@ def main(content, cluster_number, groups) -> None:
     #                     print(f"Zero length, {fast_uri} {doc_entity.text}")
     #                 fast_subjects[fast_uri] = { 'weight': 1,
     #                                             'label': series['Label'].item() }
-    #         st.write(abstract['abstracts'].item())
+             st.write(abstract['abstracts'])
     #
-    # fast_suggestions.write(fast_subjects)
+    fast_suggestions.write(fast_subjects)
