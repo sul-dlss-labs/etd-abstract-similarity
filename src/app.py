@@ -14,6 +14,8 @@ import streamlit as st
 import detail
 import helpers
 
+st.set_page_config(page_title='ETD Abstract Similarity')
+
 def _get_state(hash_funcs=None):
     session = helpers._get_session()
     if not hasattr(session, "_custom_session_state"):
@@ -51,8 +53,8 @@ def areas_in_cluster_graph(cluster_df: pd.DataFrame):
     return ax
    
 
-def header_loading() -> tuple:
-    st.title("Stanford ETD Abstract Similarity")
+def loading() -> tuple:
+    
     #st.image("src/sul-logo.svg")
     abstracts_df = pd.read_pickle("data/abstracts.pkl")
     with open("data/abstracts-bert-embeddings.pkl", "rb") as fo:
@@ -61,27 +63,14 @@ def header_loading() -> tuple:
 
 
 
-def cluster_results(cluster_size: int,
-                    clustered_abstracts: list) -> None:
-    for row in clustered_abstracts:
-        number = row[0]
-        header = f"Cluster {number+1} size: {len(row[1])}"
-        areas = [area for area in row[1].groupby(by='area')]
-        st.subheader(header)
-        if st.button("Details", key=f"{cluster_size} {number}"):
-            detail.main(number, areas)
-        # st.markdown(get_json_download(row[1]), unsafe_allow_html=True)         
-        ax = areas_in_cluster_graph(row[1])
-        ax.set_title(f"Number of Druids by Area\nCluster {number+1} of {cluster_size}")
-        st.pyplot(plt)
+#def cluster_results(cluster_size: int,
+#                    clustered_abstracts: list) -> None:
 
-def get_json_download(df):
-    json_str = df.to_json()
-    b64 = base64.b64encode(json_str.encode())
-    return f'<a href="data:file/json;base64,{b64}">Download json</a>'
 
 def main():
-    abstracts_df, abstracts_embeddings = header_loading()
+    head = st.empty() 
+    head.title("Stanford ETD Abstract Similarity")
+    abstracts_df, abstracts_embeddings = loading()
     abstract_btn = st.sidebar.button("About Abstracts and BERT")
     kmeans_btn = st.sidebar.button("About KMeans Clustering")
     st.sidebar.button("Reset")
@@ -90,12 +79,25 @@ def main():
     if kmeans_btn:
         helpers.about_kmeans()
     if not abstract_btn and not kmeans_btn:
-        option = st.slider("Number of Clusters", 1, 50)
-        st.header(f"Cluster size is {option}")
+        main_content = st.beta_container()
+
+        option = main_content.slider("Number of Clusters", 1, 50)
+        main_content.header(f"Cluster size is {option}")
         clustered_abstracts = helpers.get_cluster(abstracts_df,
                                                   abstracts_embeddings,
                                                   option)
-        cluster_results(option, clustered_abstracts)
+        for row in clustered_abstracts:
+            number = row[0]
+            header = f"Cluster {number+1} size: {len(row[1])}"
+            areas = [area for area in row[1].groupby(by='area')]
+            main_content.subheader(header)
+            if main_content.button("Details", key=f"{option} {number}"):
+                detail.main(main_content, number, areas)
+           #st.markdown(get_json_download(row[1]), unsafe_allow_html=True)         
+            ax = areas_in_cluster_graph(row[1])
+            ax.set_title(f"Number of Druids by Area\nCluster {number+1} of {option}")
+            main_content.pyplot(plt)
+
 
 
 if __name__ == "__main__":
