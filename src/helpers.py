@@ -124,6 +124,6 @@ def load_fast(fast_df: pd.DataFrame, label: str) -> tuple:
 # Setup FAST Topic, Geographical, and Chronological Spacy Vocabularies
 def setup_spacy() -> tuple:
     # Loads Topics and Geographic to Spacy Vocabularies
-    geo_nlp, geo_entity = load_fast(FAST_GEO_DF)
-    topic_nlp, topic_entity = load_fast(FAST_TOPICS_DF)
+    geo_nlp, geo_entity = load_fast(FAST_GEO_DF, 'Geo')
+    topic_nlp, topic_entity = load_fast(FAST_TOPICS_DF, 'Topic')
     return geo_nlp, geo_entity, topic_nlp, topic_entity
