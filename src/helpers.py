@@ -23,6 +23,7 @@ from streamlit.server.server import Server
 ABSTRACT_MD = pathlib.Path("doc/abstracts-df.md")
 BERT_SENTENCE_MD = pathlib.Path("doc/bert-sentence-desc.md")
 FAST_GEO_DF = pd.read_json("data/fast-geo.json")
+FAST_NER_MD = pathlib.Path("doc/fast-ner-spacy.md")
 FAST_TOPICS_DF = pd.read_json("data/fast-topics.json")
 FAST_VOCAB = pd.concat([FAST_GEO_DF, FAST_TOPICS_DF])
 KMEANS_MD = pathlib.Path("doc/kmeans-desc.md")
@@ -66,7 +67,9 @@ def about_kmeans():
     st.markdown(KMEANS_MD.read_text())
     cluster_sizes_graph()
 
-
+def about_fast_ner():
+    st.markdown(FAST_NER_MD.read_text())
+    st.write(FAST_TOPICS_DF.sample(10))
 
 class _SessionState:
     def __init__(self, session, hash_funcs):

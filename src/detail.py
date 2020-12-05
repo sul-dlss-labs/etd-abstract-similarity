@@ -11,7 +11,7 @@ setup_spacy = st.cache(helpers.setup_spacy, allow_output_mutation=True)
 abstracts_df = pd.read_pickle("data/abstracts.pkl")
 
 def main(container, cluster_number, groups) -> None:
-    #geo_nlp, geo_entity, topic_nlp, topic_entity = setup_spacy()
+    geo_nlp, geo_entity, topic_nlp, topic_entity = setup_spacy()
     container.empty()
     container.header(f"Details for Cluster {cluster_number+1}")
     fast_suggestions = st.empty()
@@ -24,12 +24,15 @@ def main(container, cluster_number, groups) -> None:
             ):
          container.subheader(f"{dept} Total {len(druids)}")
          for druid in druids.iterrows():
-             container.subheader(druid[1]['title'])
+             container.markdown(f"### [{druid[1]['title']}](https://purl.stanford.edu/{druid[0]})")
              abstract = druid[1]['abstracts']
-             container.write(abstract)
-    #         st.markdown(f"#### {druid} [{abstract['title'].item()}](https://purl.stanford.edu/{druid})")
-    #         st.markdown("#### FAST Suggestions")
-    #         doc = nlp(abstract['abstracts_cleaned'].item())
+             #container.write(abstract)
+             
+             container.markdown("#### FAST Suggestions")
+             cleaned_abstract = druid[1]['abstracts_cleaned']
+             doc = topic_nlp(abstract)
+             container.write(displacy.render(doc, style="ent"), unsafe_allow_html=True)
+
     #         for doc_entity in doc.ents:
     #             fast_uri = fast_vocab.keyword_processor.get_keyword(doc_entity.text)
     #             if fast_uri in fast_subjects:
