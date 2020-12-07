@@ -23,7 +23,7 @@ def _get_state(hash_funcs=None):
                                                               hash_funcs)
     return session._custom_session_state
 
-
+@st.cache(allow_output_mutation=True)
 def areas_in_cluster_graph(cluster_df: pd.DataFrame):
     #! Should use df.plot instead of plt directly to generate figure
     area_data = {}
