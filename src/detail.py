@@ -8,23 +8,31 @@ import spacy
 from spacy import displacy
 
 setup_spacy = st.cache(helpers.setup_spacy, allow_output_mutation=True)
+abstracts_df = pd.read_pickle("data/abstracts.pkl")
 
+def main(container, cluster_number, groups) -> None:
+    geo_nlp, geo_entity, topic_nlp, topic_entity = setup_spacy()
+    container.empty()
+    container.header(f"Details for Cluster {cluster_number+1}")
+    fast_suggestions = st.empty()
+    fast_subjects = dict()
+    #for group in groups:
+    #    st.subheader(f"{group[0]} {len(group[1])}")
+    #    st.write(group[1])
+    for dept, druids in reversed(
+                 sorted(groups, key=lambda item: len(item[1]))
+            ):
+         container.subheader(f"{dept} Total {len(druids)}")
+         for druid in druids.iterrows():
+             container.markdown(f"### [{druid[1]['title']}](https://purl.stanford.edu/{druid[0]})")
+             abstract = druid[1]['abstracts']
+             #container.write(abstract)
+             
+             container.markdown("#### FAST Suggestions")
+             cleaned_abstract = druid[1]['abstracts_cleaned']
+             doc = topic_nlp(abstract)
+             container.write(displacy.render(doc, style="ent"), unsafe_allow_html=True)
 
-def main(content, cluster_number, groups) -> None:
-    content.empty()
-    nlp, fast_vocab = setup_spacy()
-    content.subheader(f"Details for Cluster {cluster_number+1}")
-    # fast_suggestions = st.empty()
-    # fast_subjects = dict()
-    # for dept, druids in reversed(
-    #             sorted(groups.items(), key=lambda item: len(item[1]))
-    #         ):
-    #     st.markdown(f"### {dept} Total {len(druids)}")
-    #     for druid in druids:
-    #         abstract = abstracts_df.loc[abstracts_df['druids'] == druid]
-    #         st.markdown(f"#### {druid} [{abstract['title'].item()}](https://purl.stanford.edu/{druid})")
-    #         st.markdown("#### FAST Suggestions")
-    #         doc = nlp(abstract['abstracts_cleaned'].item())
     #         for doc_entity in doc.ents:
     #             fast_uri = fast_vocab.keyword_processor.get_keyword(doc_entity.text)
     #             if fast_uri in fast_subjects:
@@ -35,6 +43,6 @@ def main(content, cluster_number, groups) -> None:
     #                     print(f"Zero length, {fast_uri} {doc_entity.text}")
     #                 fast_subjects[fast_uri] = { 'weight': 1,
     #                                             'label': series['Label'].item() }
-    #         st.write(abstract['abstracts'].item())
+    #         st.write(druid)
     #
-    # fast_suggestions.write(fast_subjects)
+    #fast_suggestions.write(fast_subjects)
