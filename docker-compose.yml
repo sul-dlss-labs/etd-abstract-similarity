@@ -1,0 +1,10 @@
+services:
+  app:
+    image: .
+    ports:
+      - 5000:5000
+    networks:
+      - etd-abstracts
+
+networks:
+  etd-abstracts: {}
