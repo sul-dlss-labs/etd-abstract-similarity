@@ -1,14 +1,6 @@
-FROM python:3.8-alpine
+FROM python:3.8-slim
 
 WORKDIR /usr/src/app
-
-RUN apk add --no-cache --update \
-    python3 python3-dev gcc \
-    gfortran musl-dev g++ git \
-    libffi-dev openssl-dev \
-    libxml2 libxml2-dev \
-    libxslt libxslt-dev \
-    libjpeg-turbo-dev zlib-dev
 
 COPY . .
 
@@ -18,6 +10,6 @@ RUN python -m spacy download en_core_web_sm
 
 RUN python -m nltk.downloader -d /usr/local/share/nltk_data stopwords
 
-EXPOSE 5000
+EXPOSE 8501
 
 CMD streamlit run src/app.py
